@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/auth/users.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 import { TaskStatus } from './tasks-status.enum';
@@ -17,11 +18,11 @@ export class TasksService {
     private tasksRepository: TasksRepository,
   ) {}
 
-  async getTaskByID(id: string): Promise<Task> {
-    let result;
+  async getTaskByID(id: string, user: User): Promise<Task> {
+    let result: Task;
 
     try {
-      result = await this.tasksRepository.findOne(id);
+      result = await this.tasksRepository.findOne({ id, user });
     } catch (error) {
       if (error.message.includes('uuid')) {
         throw new BadRequestException('Invalid ID');
@@ -33,16 +34,20 @@ export class TasksService {
     return result;
   }
 
-  getTasks(filterDto: GetTasksFilterDto): Promise<Task[]> {
-    return this.tasksRepository.getTasks(filterDto);
+  getTasks(filterDto: GetTasksFilterDto, user: User): Promise<Task[]> {
+    return this.tasksRepository.getTasks(filterDto, user);
   }
 
-  createTask(createTaskDto: CreateTaskDto): Promise<Task> {
-    return this.tasksRepository.createTask(createTaskDto);
+  createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
+    return this.tasksRepository.createTask(createTaskDto, user);
   }
 
-  async updateTaskStatus(id: string, status: TaskStatus): Promise<Task> {
-    const task = await this.getTaskByID(id);
+  async updateTaskStatus(
+    id: string,
+    status: TaskStatus,
+    user: User,
+  ): Promise<Task> {
+    const task: Task = await this.getTaskByID(id, user);
 
     task.status = status;
 
@@ -51,8 +56,8 @@ export class TasksService {
     return task;
   }
 
-  async deleteTask(id: string): Promise<Task> {
-    const task = await this.getTaskByID(id);
+  async deleteTask(id: string, user: User): Promise<Task> {
+    const task: Task = await this.getTaskByID(id, user);
 
     return this.tasksRepository.remove(task);
   }
